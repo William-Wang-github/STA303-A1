@@ -1,5 +1,5 @@
 ---
-title: "STA303 Assignment 1"
+title: "STA303 A1"
 author: "William Wang"
 output: 
   html_document:
