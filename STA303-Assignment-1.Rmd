@@ -1,0 +1,337 @@
+---
+title: "STA303 Assignment 1"
+author: "William Wang"
+output: 
+  html_document:
+    toc: TRUE
+    fig_width: 3.5
+    fig_height: 3
+  pdf_document:
+    toc: TRUE
+    fig_width: 3.25
+    fig_height: 3
+---
+  
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r, echo=FALSE, message=FALSE,warning=FALSE}
+#install.packages('lmtest')
+#install.packages('tidyverse')
+#install.packages('kableExtra')
+#install.packages('tinytex')
+#tinytex::install_tinytex()
+library(lmtest)
+library(kableExtra)
+library(tidyverse)
+```
+
+
+# Question 1
+A random sample of 55 crime shows was taken from each decade (1990s, 2000s, 2010s). The following
+variables are provided in crime_show_ratings.RDS:
+
+```{r, echo=FALSE}
+Q1TableDF <- data.frame(Variable = c("season_number","title","season_rating","decade","genres"),
+                        Description = c("Season of show","Name of show","Average rating of episodes in the given  
+                                        season","Decade this season is from (1990s, 2000s, 2010s)","Genres this shows 
+                                        is part of"))
+Q1TableDF %>% 
+  kable(booktabs=T) %>%
+  kable_styling() %>%
+  row_spec(0,bold=T)
+```
+
+
+**Question of interest**: We want to know if the average season rating for crime shows is the same
+decade to decade.
+
+## Question 1a
+
+**Write the equation for a linear model that would help us answer our question of interest AND state the assumptions for the ANOVA.**
+
+***Solution:***
+  
+  The linear model equation that would help answer our question is 
+
+  $Y_{j} = \mu_{1990}+d_{2000}(\mu_{2000}-\mu_{1990})+d_{2010}(\mu_{2010}-\mu_{1990})+\epsilon_j$
+
+  Where $Y_j$ is the response variable, so the average crime show season rating for the $j^{th}$ decade where $j\in {\{1990,2000,2010\}}$, the *d* variables are the dummy variables for each respective decade, and the $\mu$ are the parameters of interest in our equation, which in this case is the average season ratings for crime shows in that $j^{th}$ decade. More specifically,
+  
+  $\mu_j=\frac{\sum_{i=1}^n \theta_{ij}}{n}$
+  
+  Where *j* is still the decade, $j\in {\{1990,2000,2010\}}$, *i* is the $i^{th}$ observation in that decade, $i=1,...,n$ for *n* observations in that decade, and $\theta_{ij}$ is the $i^{th}$ observed season rating for decade *j*.
+
+  Moreover, we can also alternatively re-write the equation by expanding out our brackets, factoring the $\mu_{1990}$ and replacing that with $d_{1990}$, as we get $\mu_{1990}(1-d_{2000}-d_{2010})$ and $1-d_{2000}-d_{2010} = d_{1990}$. Thus, assuming the same variable definitions as before, alternate equations could be
+  
+  $Y_j = \sum_j d_j\mu_j+\epsilon_j$ or $Y_j = d_{1990}\mu_{1990}+d_{2000}\mu_{2000}+d_{2010}\mu_{2010}+\epsilon_j$
+  
+  The assumptions we make for the ANOVA are
+      
+- The errors are independent, so the observations are independent
+- The errors are normally distributed with E$[\epsilon_i]=0$
+- The errors have constant variance, where var$[\epsilon_i]=\sigma^2$
+      
+## Question 1b
+
+  **Write the hypotheses for an ANOVA for the question of interest in words. Make it specific to this context and question.**
+  
+***Solution:***
+
+  The null hypothesis for the ANOVA of our question of interest is that there is no statistically significant difference between the average crime show season ratings between decade to decade, i.e. 
+  
+  $H_0: \mu_{1990} = \mu_{2000} = \mu_{2010}$. 
+  
+  The alternative hypothesis for our question of interest is that there is at least 1 decade where the average crime show season rating is different from the others, so 
+  
+  $H_1: \text{atleast 1 }  \mu \text{ is not equal to the others.}$ 
+ 
+## Question 1c
+
+  **Make two plots, side-by-side boxplots and facetted historgrams, of the season ratings for each decade. Briefly comment on which you prefer in this case and one way you might improve this plot (you don’t have to make that improvement, just briefly decribe it). Based on these plots, do you think there will be a significant difference between any of the means**
+  
+```{r echo=FALSE}
+# load crimeshow data
+# (have the .RDS downloaded to the same location your assignment .Rmd is saved)
+crime_show_data <- readRDS("crime_show_ratings.RDS")
+par(mfrow=c(1,2))
+  # Side by side box plots
+  crime_show_data %>%
+    ggplot(aes(x = decade, y = season_rating)) +
+    geom_boxplot() +
+    ggtitle("Boxplots of average rating by 
+             decade for crime TV shows")
+  # Facetted histograms
+  crime_show_data %>%
+    ggplot(aes(x = season_rating)) +
+    geom_histogram(bins=20) +
+    facet_wrap(~decade) +
+    ggtitle("Histograms of average rating by 
+            decade for crime TV shows")
+```
+  
+***Solution:***
+
+  Between the histogram and boxplot, I would prefer the boxplot in this case. This is due to a few factors, for one, since we are trying to analyze the average season rating between decades, a boxplot is very good here. As we can see we have the medians for each decade clearly shown by nature of the box plots, we can get a good idea of the distribution of the points throughout our data, as opposed to a general idea of the medians location in the frequency distribution of the histogram. Additionally by the nature of the histogram, I feel as though we are not able to get as exact of a value of any specific data point that we may be interested in for our comparison, as we have a rectangle covering an area of the axis as opposed to more precise lines at points like the median or the quantiles. Furthermore, the boxplot tells us more information overall, as along with the our median we have the 25th and 75th percentiles, i.e. the first and third quartiles, the interquantile range, and the "maximum" and "minimum" whiskers, which are $Q3 \text{ or } Q1 \pm 1.5*IQR$. All of this information can help us understand the overall distribution of data points, as well as potentially estimate where the means may lie. Finally, the boxplot also shows us more clearly the possible extreme outlier points of the dataset, where as we don't really have a clear idea from the histogram. These factors lead me to prefer the boxplot over the histogram in answering our question of interest, however we can still improve on our plot.
+
+  One way to improve the quality of the boxplot interpretations would be to remove the very extreme outliers from the data which would improve the overall fit of the data. However, if we only want an improvement in terms the visualization or depiction of our data, we could more clearly display important points such as the median, and the quartiles of our data by printing the numeric values next to the horizontal lines of the box.
+  
+  Based on the plots, it looks to me that there may not be a significant difference among the means between decades. This is because in the box plot the data are all generally within the same intervals and the medians appear to be in similar locations. This couple with the 1990 decade having larger upper half, meaning the distribution is more spread out past the median, makin the mean above the median, and with the last two decades having larger lower halfs this would make those means lower than then medians. Thus these three means should be rather similar once we account for the full spread of the data in relation to the medians as the decade with lower median has a higher mean, and the decades with the higher medians have a lower mean, resulting in the means across decades to land relatively close to each other. Thus, using the boxplot we can have a good idea of where the average crime show season ratings would lie for all three decades and can likely conclude there won't be any significant difference between them. Furthermore, from the histograms, it looks like most of the data is centered around 8 for all three decades and the overall shape, i.e. the frequency distribution of the points, are similar, all being similar to a normal distribution. Thus, given most of the data lie around the same value it is likely that the average crime show season rating between decades has no significant difference
+  
+## Question 1d
+
+  **Conduct a one-way ANOVA to answer the question of interest above. Show the results of summary() on your ANOVA and briefly interpret the results in context (i.e., with respect to our question of interest).**
+  
+***Solution:***
+
+```{r}
+CSanova <- aov(season_rating~decade, data = crime_show_data) 
+summary(CSanova)
+```
+
+We know that the ANOVA tests the null hypothesis that the means are the same between different groups, which in our case is the mean crime show season rating between decades, and the alternative hypothesis is that at least one decade mean is not equal to the others. From the above, we can see that  we have a p-value of 0.238 between decades, this is not below our significance level of 0.05, which means we cannot reject the null hypothesis of the test. The p-value of 0.238 means that assuming our null hypothesis is true, i.e. all decade means are the same, we would observe what we did 23.8% of the time. Thus, based on the p-value, being we cannot reject the null hypothesis, and there is no statistically significant evidence showing that the average crime show season rating is different between decade to decade, which supports our idea in part c. 
+
+## Question 1e
+
+**Update the code below to create two plots and the standard deviation of season rating by decade. Briefly comment on what each plot/output tells you about the assumptions for conducting an ANOVA with this data.**
+  
+  $\textbf{Note}$: there are specific tests for equality of variances, but for the purposes of this course we will just consider a rule of thumb from Dean and Voss (Design and Analysis of Experiments, 1999, page 112): if the ratio of the largest within-in group variance estimate to the smallest within-group variance estimate does not exceed 3, $s^2_{max}/s^2_{min} < 3$, the assumption is probably satisfied
+
+***Solution:***
+```{r,fig.align='center'}
+plot(CSanova,1)
+plot(CSanova,2)
+
+constantvarcheckdata <- crime_show_data %>%
+                      group_by(decade) %>%
+                      summarise(var_rating = sd(season_rating)^2)
+constantvarcheckdata
+
+max(constantvarcheckdata$var_rating)/min(constantvarcheckdata$var_rating)
+```
+
+From our outputs above, we see that we have 2 diagnostic plots from our ANOVA model. The first plot is a plot of the residuals vs the fitted values and this helps us with determining constant variance of the residuals, our third assumption from part a. Using our plot we can see that the variance of the residuals is rather constant overall, except for a few outliers which we identified in our boxplot, thus it seems that likely our assumption of constant variance is satisfied. Looking at the standard deviation/variance values in our table we can notice that the values for each decade seem relatively similar, though the 1990 and 2010 decades are a bit larger in variability due to those 2 having very extreme outliers. We can also further this thought using the note we were given, by finding the ratio of the largest and smallest variance and seeing if it is less than 3, which we can see that it is in our code above so we have further evidence that this assumption is satisfied. The second plot is a Normal QQ plot of our data, this helps us check our assumption about the normality of the residuals, our first assumption in part a. Since most of the data is close to or on the line that is shown, with the exception of some outliers, we can likely conclude that the normality assumption is likely satisfied. Finally, with our last unverified assumption on the independence of observations, we have no way of telling that from our data, though we would be able to get an idea of whether it would be true from the design of our study. As such, we don't have a method by which to check this assumption with the given code and data, however I suspect that this assumption may not be satisfied as we have many seasons the same crime shows and typically the rating doesn't change much across seasons.
+
+## Question 1f
+
+**Conduct a linear model based on the question of interest. Show the result of running summary() on your linear model. Interpret the coefficients from this linear model in terms of the mean season ratings for each decade. From these coefficients, calculate the observed group means for each decade, i.e.,** $\hat{\mu}_{1990s},\ \hat{\mu}_{2000s}\ \text{and}\ \hat{\mu}_{2010s}$
+
+***Solution:***
+
+```{r}
+CSlinmodel <- lm(season_rating~decade, data = crime_show_data)
+summary(CSlinmodel)
+```
+
+Based on the summary of the linear model I created, we can see that we have an intercept of 7.9222, this is the estimated average season_rating for our baseline decade, which would be 1990 in our case. We also have estimates for the decades of 2000 and 2010. These values represent the additional amount for the average season rating in that decade that is added to our intercept. From the p-values we can see that we do not have any values lower than our typical significance level of 0.05, other than the p-value for the intercept itself which just says tells us that intercept is very likely to be a non-zero value, thus we would not be able to reject the null hypothesis for this model, that being the slope is 0, i.e. there is no difference in our slopes/averages of the decades. So, if we cannot reject the null that means that their is no statistically significant evidence that average crime show season ratings are different between decades, which we predicted from part c. However, we do have one estimator, `decade2010` that is barely lower than 0.10 which suggests we may have very weak evidences against the null and may possibly want to reject the null, but we would likely want to test further to be certain.
+
+Based on our coefficients above, we can calculate each of the observed means for each decade, for $\mu{1990}$ we look at the intercept value as that is the base decade that we have picked which we can see in our part a). Then, for the remaining two decades we can use our intercept value and add the respective coefficient estimates provided by the summary, giving us the observed group means of 7.9222, 8.0589, and 8.1160 for the decades 1990, 2000, and 2010 respectively. These three means look relatively similar and do make sense given our plots from before in part c.
+
+# Question 2
+Data from the 2014 American National Youth Tobacco Survey is available on http://pbrown.ca/teaching/303/data, where there is an R version of the 2014 dataset smoke.RData, a pdf documentation file 2014-Codebook.pdf, and the code used to create the R version of the data smokingData.R.
+You can obtain the data with:
+
+```{r}
+smokeFile = 'smokeDownload.RData'
+if(!file.exists(smokeFile)){
+download.file(
+'http://pbrown.ca/teaching/303/data/smoke.RData',
+smokeFile)
+}
+(load(smokeFile))
+```
+
+The smoke object is a data.frame containing the data, the smokeFormats gives some explanation of the variables. The colName and label columns of smokeFormats contain variable names in smoke and descriptions
+respectively.
+
+```{r}
+smokeFormats[
+  smokeFormats[,'colName'] == 'chewing_tobacco_snuff_or',
+  c('colName','label')]
+```
+
+Consider the following model and set of results
+
+```{r, warning=FALSE}
+# get rid of 9, 10 year olds and missing age and race
+smokeSub = smoke[which(smoke$Age > 10 & !is.na(smoke$Race)), ]
+smokeSub$ageC = smokeSub$Age - 16
+smokeModel = glm(chewing_tobacco_snuff_or ~ ageC + RuralUrban + Race + Sex,
+data=smokeSub, family=binomial(link='logit'))
+knitr::kable(summary(smokeModel)$coef, digits=3,booktabs=T)%>%kable_styling()
+
+logOddsMat = cbind(est=smokeModel$coef, confint(smokeModel, level=0.99))
+oddsMat = exp(logOddsMat)
+oddsMat[1,] = oddsMat[1,] / (1+oddsMat[1,])
+rownames(oddsMat)[1] = 'Baseline prob'
+knitr::kable(oddsMat, digits=3,booktabs=T)%>%kable_styling()
+```
+ 
+
+## Question 2a
+
+**Write down and explain the statistical model which smokeModel corresponds to, defining all your variables.It is sufficient to write** ***X***$_i\beta$ **and explain in words what the variables in $X_i$ are, you need not write** $\beta_1X_{i1}+\beta_2X_{i2}+...$
+
+***Solution:***
+
+The statistical model for which `smokeModel` corresponds to is a binary or logistic regression model and the equation we use is
+
+$log(\frac{\mu_i}{1+\mu_i})=X_i\beta$
+
+Where our response variable is transformed response for the probability of having used chewing tobacco, snuff, or dip on 1 or more days in the past 30 days, represented by the `chewing_tobacco_snuff_or`, given a set of categorical variables. We transformed this using a logit link function which we can see when we set `family=binomial(link='logit')`, our $X_i$ values correspond to all the categorical variables we listed in the table. For the model we would have an $X_i$ value for age of the person, whether they are rural or not, what race they are and the sex of the person. More specifically, the model tells us the additive probability given the person's age in relation to 16, whether they are urban or rural, whether they are female or not and what race they may be, so if they are black, hispanic, asian, native or pacific. These categorical values are used in relation to a dummy variable in our model which would be 1 or 0 depending on whether they were part of that category, this is assuming they are not part of the base individual which we delve further into in the next part.
+
+## Question 2b
+**Write a sentence or two interpreting the row “baseline prob” in the table above. Be specific about which
+subset of individuals this row is referring to.**
+
+***Solution:***
+The "baseline prob" in our table above is the probability for individuals in our baseline population to answer yes to using chewing tobacco, snuff or dip atleast once in the last 30 days. The individuals I am referring to specifically are 16 year old white urban males, as `ageC` uses 16 as the centering since we defined it using`smokeSub$Age - 16` and the categorical variables that missing from our table, meaning R is treating those categories as the thing to base the table categories on, are `Racewhite`, `SexM` and `RuralUrbanUrban`, which correspond to a white urban male.
+
+## Question 2c
+**If American TV is to believed, chewing tobacco is popular among cowboys, and cowboys are white, male and live in rural areas. In the early 1980s, when Dr. Brown was a child, the only Asian woman ever on North American TV was Yoko Ono, and Yoko Ono lived in a city and was never seen chewing tobacco. Consider the following code, and recall that a 99% confidence interval is roughly plus or minus three standard deviations.**
+
+```{r}
+newData = data.frame(Sex = rep(c('M','F'), c(3,2)),
+Race = c('white','white','hispanic','black','asian'),
+ageC = 0, RuralUrban = rep(c('Rural','Urban'), c(1,4)))
+smokePred = as.data.frame(predict(smokeModel, newData, se.fit=TRUE, type='link'))[,1:2]
+smokePred$lower = smokePred$fit - 3*smokePred$se.fit
+smokePred$upper = smokePred$fit + 3*smokePred$se.fit
+smokePred
+
+expSmokePred = exp(smokePred[,c('fit','lower','upper')])
+knitr::kable(cbind(newData[,-3],1000*expSmokePred/(1+expSmokePred)), digits=1,booktabs=T)%>%kable_styling()
+```
+**Write a short paragraph addressing the hypothesis that rural white males are the group most likely to use
+chewing tobacco, and there is reasonable certainty that less than half of one percent of ethnic-minority urban
+women and girls chew tobacco.**
+
+***Solution:***
+
+The first hypothesis is that rural white males are the group most likely to use chewing tobacco, we are able to reasonably verify this because of the table provided above. This table lists our best estimate and a 99% confidence interval range of the number of individuals out of 1000 that would answer yes to using chewing tobacco, snuff or dip atleast once in the last 30 days given their sex, race and whether they were rural or urban. We can see that our best estimate, i.e. the fit column, for a white rural male is 149.3, this suggests that 14.93% of rural white males would use chewing tobacco. Furthermore, our 99% confidence interval of reasonable estimates has a lower bound of 129.6 and an upper bound of 171.4 meaning we are very confident that the likelihood of a rural white male chewing tobacco lies between 129 to 172 individuals out of 1000, i.e. between 12.96% to 17.14%. Moreover, we can see that these values are much greater than any of the other possible combinations of individual traits, and the possible range of values does not overlap with any other possible range for any other group. Thus, given that fact we can likely conclude that a white rural male is most likely to use chewing tobacco. The second hypothesis is that we are reasonably certain that less than half of one percent of ethnic-minority urban females chew tobacco. Of the individuals listed in the table, only two rows fall under that set of individuals we are interested in, the urban asian females and the urban black females, so lets look at them individually. For the urban black females we see a fit value of 2.3, which is our best estimate of the number of individuals out of 1000 in that category that would use chewing tobacco, alternatively dividing by 10 would give us a 0.23% likelihood, this aligns with our hypothesis. In addition to our fit value for that group, we also have an upper and lower bound for our 99% confidence interval of the possible range of values, those bounds being 4.2 and 1.3, or 0.42% and 0.13%, respectively. Thus, we can see that our range of values, i.e. our 99% confidence interval, all fall under 0.5%, meaning that we can say with reasonable certainty less than half of urban black femalesuse chewing tobacco. For our second group, the urban asian females, we can see our confidence interval has an upper and lower bound of 0.8 and 6.8, meaning we have an interval of 0.08% and 0.68%. Although a large part of our interval does fall below our target of 0.5%, we have a portion of our confidence interval lying above 0.5%. Thus, I would be concerned about the part of the interval that is greater than 0.5% as our interval is a range of reasonable estimates of the probability/percentage. As a result, I would say that we do not have reasonable certainty that the percentage of urban asian females that use chewing tobacco is less than half of a percent, based on our study.
+
+# Question 3
+Data from the Fiji Fertility Survey of 1974 can be obtained as follows.
+```{r}
+fijiFile = 'fijiDownload.RData'
+if(!file.exists(fijiFile)){
+download.file(
+'http://pbrown.ca/teaching/303/data/fiji.RData',
+fijiFile)
+}
+(load(fijiFile))
+```
+
+The **monthsSinceM** variable is the number of months since a woman was first married. We’ll make the overly
+simplistic assumption that a woman’s fertility rate is zero before marriage and constant thereafter until
+menopause. Only pre-menopausal women were included in the survey sample. The residence variable has
+three levels, with ‘suva’ being women living in the capital city of Suva. Consider the following code.
+
+```{r}
+# get rid of newly married women and those with missing literacy status
+fijiSub = fiji[fiji$monthsSinceM > 0 & !is.na(fiji$literacy),]
+fijiSub$logYears = log(fijiSub$monthsSinceM/12)
+fijiSub$ageMarried = relevel(fijiSub$ageMarried, '15to18')
+fijiSub$urban = relevel(fijiSub$residence, 'rural')
+fijiRes = glm(
+children ~ offset(logYears) + ageMarried + ethnicity + literacy + urban,
+family=poisson(link=log), data=fijiSub)
+logRateMat = cbind(est=fijiRes$coef, confint(fijiRes, level=0.99))
+knitr::kable(cbind(
+summary(fijiRes)$coef,
+exp(logRateMat)),
+digits=3,booktabs=T)%>%kable_styling()
+
+fijiSub$marriedEarly = fijiSub$ageMarried == '0to15'
+fijiRes2 = glm(
+children ~ offset(logYears) + marriedEarly + ethnicity + urban,
+family=poisson(link=log), data=fijiSub)
+logRateMat2 = cbind(est=fijiRes2$coef, confint(fijiRes2, level=0.99))
+knitr::kable(cbind(
+summary(fijiRes2)$coef,
+exp(logRateMat2)),
+digits=3,booktabs=T)%>%kable_styling()
+
+lmtest::lrtest(fijiRes2, fijiRes)
+```
+
+
+## Question 3a
+**Write down and explain the statistical model which fijiRes corresponds to, defining all your variables.
+It is sufficient to write** ***X***$_i\beta$ **and explain in words what the variables in $X_i$ are, you need not write**
+$\beta_1X_{i1}+\beta_2X_{i2}+...$
+
+***Solution:***
+
+The statistical model for which `fijiRes` corresponds to is a Poisson regression model where the equation is
+
+$log(\frac{\mu_i}{O_i}) = X_i\beta$ 
+
+which we can rewrite using the properties of logarithm to be 
+
+$log(\mu_i) = X_i\beta + log(O_i)$ 
+
+Where our response variable in our first model, is a rate of children born per year since marriage and the response variable in our second model is adjusted by an offset of years which is our $log(O_i)$, thus $\mu_i$ represents the number of children born and $O_i$ is the years since marriage. The transformation we applied to this variable was a log link function on the poisson as seen in when we set `family=poisson(link=log)` in the glm. Our $O_i$ corresponds to the offset term we have chosen, which would be the years since marriage in our case since we have `offset(logYears)` in our glm. The $X_i$ correspond to the various categorical variables in the model such as `ageMarried`, `ethnicity`, `literacy` and `urban`. More specifically, the `ageMarried`, and `ethnicity`  are broken up into even more categorical variables, with the ages being `ageMarried0to15`, `ageMarried15to18`, `ageMarried18to20`, `ageMarried20to22`, `ageMarried22to25`, `ageMarried25to30` and `ageMarried30toInf`; Possible ethnicity categories being, Fijian, Indian, European, part European, pacific Islander, routman, chines and and a generalised other. The `urban` variable is also broken up into whether the person lived in a rural area, Suva, or another urban area. For each of our general categorical variables we used the baseline individual of a literate rural Fijian married at age 15 to 18, as those were the categories not listed in our tables.
+
+## Question 3b
+**Is the likelihood ratio test performed above comparing nested models? If so what constraints are on the
+vector of regression coefficients $\beta$ in the restricted model?**
+
+***Solution:***
+
+Yes, the likelihood ratio test performed above is comparing nested models, this is because marriedEarly is just a "simplified" version of ageMarried, where we only take use the `ageMarried0to15`, and for one model to be nested in the other all the variables in the smaller model must be a subset of the larger one, which it is in our case as the larger one just has the additional ages married and literacy as the difference. 
+Therefore, the constraints we put on the vector of regression coefficients in the larger model are to set the $\beta$ corresponding to `literacy` to be zero and set the $\beta$s that are not the categorical variable `ageMarried0to15` to zero, i.e. the dummy variables are set to 0 for the corresponding coefficients of `literacy` and all of the `ageMarried` variables except for `ageMarried0to15`.
+
+## Question 3c
+**It is hypothesized that improving girls’ education and delaying marriage will result in women choosing
+to have fewer children and increase the age gaps between their children. An alternate hypothesis is that
+contraception was not widely available in Fiji in 1974 and as a result there was no way for married women
+to influence their birth intervals. Supporters of each hypothesis are in agreement that fertility appears to be
+lower for women married before age 15, likely because these women would not have been fertile in the early
+years of their marriage.**
+**Write a paragraph discussing the results above in the context of these two hypotheses.**
+
+***Solution:***
+
+For our first hypothesis, we would be interested at looking at whether or not there is any statistically significant difference between those who were literate, and married later versus those who were not literate and married earlier. In the context of this hypothesis we want to see if literacy and not marrying early has any effect on the number of children a woman has because if they had lots of children it would be difficult for them to have large age gaps betewen them. Thus we can look at the est column for the first and second tables, specifically at the variables `literacyno`, `ageMarried0to15` and `marriedEarlyTRUE` which gives us the effect that being part of the specified category has on the number of children in relation to the reference group. We can see that the woman being illiterate has an est value of 0.936, which means that we would see approximately 6.4% lower response than our reference group of literate women. Also, the `ageMarried0to15` and `marriedEarlyTRUE` variables have est values of 0.888 and 0.873 respectively which would mean that if the women fell into these categories they would have a 11.2% and 12.7% lower number of children than if they were married at 15 to 18 or married later than 15 respectively. These percentages seems rather small so it is pointing towards the fact that education may not have much of an effect on our response variable. We can also look at the likelihood ratio test of the two models, where the "simplier" model that doesn't account for literacy is compared to the larger model which includes literacy in the model. From that comparison, we can see we have a p-value of 0.3834, which is greater than our typical significance level of 0.05, thus we cannot reject the null hypothesis of this test. The null hypothesis of this test being that the larger model does not add anything more to our smaller model's conclusion. Thus, this would mean that we don't have any statistically significant evidence that improving girls' education, i.e. our literacy variable, would have much effect on women choosing to have fewer children, and as a result increase the age gaps between their children. Thus, this would mean that in the context of the first hypothesis, our evidence seems to contradict the hypothesis being posited. For the second hypothesis, we don't really have any direct way of comparing the whether or not there has been any influence on birth intervals that contraception had after 1974 as the study was conducted in the same year. However, we can possibly link education with contraception use as those who learn about contraception use in school are more likely to use contraception. Thus, we can again look at the affect that literacy, and as a result marrying later, had on the response variable of the number of children that the women had. We can then use our analysis for the first hypothesis and conclude that the lack of contraception may not have had much of an affect on the number of children they would have and the gap between them, i.e. the birth intervals.
